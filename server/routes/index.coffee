@@ -84,6 +84,7 @@ module.exports.setup = (app) ->
   app.get('/db/course/:handle', mw.rest.getByHandle(Course))
   app.get('/db/course/:handle/level-solutions', mw.courses.fetchLevelSolutions)
   app.get('/db/course/:handle/levels/:levelOriginal/next', mw.courses.fetchNextLevel)
+#  app.put('/db/course/:handle', mw.auth.checkLoggedIn(), mw.courses.put)
 
   app.get('/db/course_instance/-/non-hoc', mw.auth.checkHasPermission(['admin']), mw.courseInstances.fetchNonHoc)
   app.post('/db/course_instance/-/recent', mw.auth.checkHasPermission(['admin']), mw.courseInstances.fetchRecent)

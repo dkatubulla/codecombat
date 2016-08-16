@@ -10,6 +10,7 @@ Course = require '../models/Course'
 User = require '../models/User'
 Level = require '../models/Level'
 parse = require '../commons/parse'
+{ isJustFillingTranslations } = require '../commons/deltas'
 
 module.exports =
 
@@ -82,3 +83,24 @@ module.exports =
     results = yield database.viewSearch(dbq, req)
     results = Course.sortCourses results
     res.send(results)
+
+  postTranslationPatch: wrap (req, res) ->
+    course = yield database.getDocFromHandle(req, Course)
+    if not course
+      throw new errors.NotFound('Course not found.')
+    delta = req.body
+    if isJustFillingTranslations(delta)
+      rawCourse = course.toObject()
+      try
+        jsondiffpatch.patch(rawCourse, delta)
+        # might need to force-change a property to make sure Mongoose actually saves changes
+        tv4 = require('tv4').tv4
+        res = tv4.validateMultiple(input, @jsonSchema)
+        if validation.valid
+          yield course.save()
+          return res.send(course.toObject())
+      catch e 
+        log.error('Could not apply patch that should have worked.', JSON.stringify(delta))
+
+    # TODO: Save the patch if we're here.
+    req.send(course.toObject())

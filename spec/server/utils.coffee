@@ -140,7 +140,11 @@ module.exports = mw =
     if sources.campaign and not data.campaignID
       data.campaignID = sources.campaign._id
     
-    data.releasePhase ||= 'released'
+    data = _.extend({}, {
+      releasePhase: 'released'
+      i18nCoverage: []
+      i18n: {}
+    })
 
     course = new Course(data)
     return course.save()
