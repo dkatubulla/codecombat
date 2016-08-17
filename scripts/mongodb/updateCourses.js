@@ -112,21 +112,18 @@ _.forEach(courses, function(course) {
   }
   course.concepts = Object.keys(concepts);
 
-  // Add i18n
-  if(!course.i18n) {
-    course.i18n = {'-':{'-':'-'}};
-  }
-  print('i18n coverage', course.name, course.i18nCoverage);
-  if(!course.i18nCoverage) {
-    print('..')
-    course.i18nCoverage = ['en'];
-  }
 });
 
 
 print("Updating courses..");
 for (var i = 0; i < courses.length; i++) {
-  db.courses.update({name: courses[i].name}, courses[i], {upsert: true});
+  db.courses.update({name: courses[i].name}, {$set: courses[i]}, {upsert: true});
 }
+
+print("Upserting i18n", db.courses.update(
+  {i18n: {$exists: false}}, 
+  {$set: {i18n: {'-':{'-':'-'}}, i18nCoverage: []}},
+  {multi: true}
+));
 
 print("Done.");
