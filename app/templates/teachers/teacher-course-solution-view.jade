@@ -16,9 +16,9 @@ block content
 
     if view.levels
       each level, index in view.levels.models
-        h2.page-break-before ##{index + 1}. #{level.get('name')}
+        h2.page-break-before ##{index + 1}. #{i18n(level.attributes, 'name')}
         h3(data-i18n="teacher.level_overview_solutions")
-        i #{level.get('description')}
+        i #{i18n(level.attributes, 'description')}
         div
           h4.text-center(data-i18n="common.intro")
           if level.get('intro')
