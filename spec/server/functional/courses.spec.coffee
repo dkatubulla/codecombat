@@ -60,6 +60,42 @@ describe 'GET /db/course/:handle', ->
     [res, body] = yield request.getAsync {uri: getURL("/db/course/dne"), json: true}
     expect(res.statusCode).toBe(404)
     done()
+    
+describe 'PUT /db/course/:handle', ->
+  beforeEach utils.wrap (done) ->
+    yield utils.clearModels([Course, User])
+    @course = yield new Course({ name: 'Some Name', releasePhase: 'released' }).save()
+    yield utils.becomeAnonymous()
+    @url = getURL("/db/course/#{@course.id}")
+    done()
+
+  it 'allows changes to i18n and i18nCoverage', utils.wrap (done) ->
+    admin = yield utils.initAdmin()
+    yield utils.loginUser(admin)
+    json = { 
+      i18n: { de: { name: 'German translation' } }
+      i18nCoverage: ['de']
+    }
+    [res, body] = yield request.putAsync { @url, json }
+    expect(res.statusCode).toBe(200)
+    expect(body._id).toBe(@course.id)
+    course = yield Course.findById(@course.id)
+    expect(course.get('i18n').de.name).toBe('German translation')
+    expect(course.get('i18nCoverage')).toBeDefined()
+    done()
+    
+  it 'returns 403 to non-admins', utils.wrap (done) ->
+    user = yield utils.initUser()
+    yield utils.loginUser(user)
+    json = { i18n: { es: { name: 'Spanish translation' } } }
+    [res, body] = yield request.putAsync { @url, json }
+    expect(res.statusCode).toBe(403)
+    course = yield Course.findById(@course.id)
+    expect(course.get('i18n')).toBeUndefined()
+    expect(course.get('i18nCoverage').length).toBe(0)
+    done()
+    
+
 
 describe 'GET /db/course/:handle/levels/:levelOriginal/next', ->
 
