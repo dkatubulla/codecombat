@@ -67,7 +67,7 @@ var courses =
     description: "Learn to create your own games which you can share with your friends.",
     duration: NumberInt(1),
     free: false,
-    releasePhase: 'beta'
+    releasePhase: 'released'
   },
   {
     name: "CS: Web Development 1",
