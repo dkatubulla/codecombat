@@ -10,6 +10,9 @@ Course = require '../models/Course'
 User = require '../models/User'
 Level = require '../models/Level'
 parse = require '../commons/parse'
+Patch = require '../models/Patch'
+tv4 = require('tv4').tv4
+slack = require '../slack'
 { isJustFillingTranslations } = require '../commons/deltas'
 
 module.exports =
@@ -84,23 +87,58 @@ module.exports =
     results = Course.sortCourses results
     res.send(results)
 
-  postTranslationPatch: wrap (req, res) ->
+  postPatch: wrap (req, res) ->
+    # TODO: Generalize this and use for other models, once this has been put through its paces
     course = yield database.getDocFromHandle(req, Course)
     if not course
       throw new errors.NotFound('Course not found.')
-    delta = req.body
-    if isJustFillingTranslations(delta)
-      rawCourse = course.toObject()
-      try
-        jsondiffpatch.patch(rawCourse, delta)
-        # might need to force-change a property to make sure Mongoose actually saves changes
-        tv4 = require('tv4').tv4
-        res = tv4.validateMultiple(input, @jsonSchema)
-        if validation.valid
-          yield course.save()
-          return res.send(course.toObject())
-      catch e 
-        log.error('Could not apply patch that should have worked.', JSON.stringify(delta))
+      
+    originalDelta = req.body.delta
+    originalCourse = course.toObject()
+    changedCourse = _.cloneDeep(course.toObject(), (value) -> 
+      return value if value instanceof mongoose.Types.ObjectId
+      return value if value instanceof Date
+      return undefined
+    )
+    jsondiffpatch.patch(changedCourse, originalDelta)
+    
+    # normalize the delta because in tests, changes to patches would sneak in and cause false positives
+    # TODO: Figure out a better system. Perhaps submit a series of paths? I18N Edit Views already use them for their rows.
+    normalizedDelta = jsondiffpatch.diff(originalCourse, changedCourse)
+    normalizedDelta = _.pick(normalizedDelta, _.keys(originalDelta))
+    reasonDidNotPatch = null
 
-    # TODO: Save the patch if we're here.
-    req.send(course.toObject())
+    validation = tv4.validateMultiple(changedCourse, Course.jsonSchema)
+    if not validation.valid
+      reasonDidNotPatch = 'Did not pass json schema.'
+    else if not isJustFillingTranslations(normalizedDelta)
+      reasonDidNotPatch = 'Adding to existing translations.'
+    else
+      course.set(changedCourse)
+      yield course.save()
+      return res.send(course.toObject())
+      
+    patch = new Patch(req.body)
+    patch.set({
+      target: {
+        collection: 'course'
+        id: course._id
+      }
+      creator: req.user._id
+      status: 'pending'
+      created: new Date().toISOString()
+      reasonDidNotPatch
+    })
+    database.validateDoc(patch)
+
+    yield course.update({ $addToSet: { patches: patch._id }})
+    yield patch.save()
+
+    patches = course.get('patches') or []
+    patches.push patch._id
+    course.set({patches})
+    res.send(course.toObject())
+
+    docLink = "https://codecombat.com/editor/course/#{course.id}"
+    message = "#{req.user.get('name')} submitted a patch to #{course.get('name')}: #{patch.get('commitMessage')} #{docLink}"
+    slack.sendSlackMessage message, ['artisans']

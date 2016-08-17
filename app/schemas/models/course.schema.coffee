@@ -17,5 +17,6 @@ _.extend CourseSchema.properties,
 
 c.extendBasicProperties CourseSchema, 'Course'
 c.extendTranslationCoverageProperties CourseSchema
+c.extendPatchableProperties CourseSchema
 
 module.exports = CourseSchema

@@ -114,7 +114,7 @@ _.forEach(courses, function(course) {
 
   // Add i18n
   if(!course.i18n) {
-    course.i18n = {};
+    course.i18n = {'-':{'-':'-'}};
   }
   print('i18n coverage', course.name, course.i18nCoverage);
   if(!course.i18nCoverage) {

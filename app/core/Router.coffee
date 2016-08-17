@@ -105,6 +105,8 @@ module.exports = class CocoRouter extends Backbone.Router
     'editor/thang-tasks': go('editor/ThangTasksView')
     'editor/verifier': go('editor/verifier/VerifierView')
     'editor/verifier/:levelID': go('editor/verifier/VerifierView')
+    'editor/course': go('editor/course/CourseSearchView')
+    'editor/course/:courseID': go('editor/course/CourseEditView')
 
     'file/*path': 'routeToServer'
 

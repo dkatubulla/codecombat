@@ -141,10 +141,11 @@ module.exports = mw =
       data.campaignID = sources.campaign._id
     
     data = _.extend({}, {
+      name: _.uniqueId('Course ')
       releasePhase: 'released'
       i18nCoverage: []
-      i18n: {}
-    })
+      i18n: {'-':{'-':'-'}}
+    }, data)
 
     course = new Course(data)
     return course.save()

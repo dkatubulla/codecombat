@@ -20,6 +20,7 @@ module.exports =
       
     query =
       $or: [
+        {'target.id': mongoose.Types.ObjectId(id)}
         {'target.original': id+''}
         {'target.original': mongoose.Types.ObjectId(id)}
       ]

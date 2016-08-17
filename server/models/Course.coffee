@@ -10,7 +10,10 @@ CourseSchema.plugin plugins.SearchablePlugin, {searchable: ['name', 'description
 CourseSchema.plugin(plugins.TranslationCoveragePlugin)
 
 CourseSchema.statics.privateProperties = []
-CourseSchema.statics.editableProperties = []
+CourseSchema.statics.editableProperties = [
+  'i18n',
+  'i18nCoverage'
+]
 
 CourseSchema.statics.jsonSchema = jsonSchema
 
