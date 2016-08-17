@@ -288,6 +288,8 @@ describe 'POST /db/course/:handle/patch', ->
     patch = yield Patch.findById(course.get('patches')[0])
     expect(_.isEqual(patch.get('delta'), @json.delta)).toBe(true)
     expect(patch.get('reasonDidNotPatch')).toBe('Adding to existing translations.')
+    [res, body] = yield request.getAsync({ url: utils.getURL("/db/course/#{@course.id}/patches?status=pending"), json: true })
+    expect(res.body[0]._id).toBe(patch.id)
     done()
     
   it 'saves a patch if applying the patch would invalidate the course data', utils.wrap (done) ->
