@@ -259,9 +259,11 @@ describe 'POST /db/course/:handle/patch', ->
     changedCourse.i18n.de.description = 'German translation!'
     @json.delta = jsondiffpatch.diff(originalCourse, changedCourse)
     [res, body] = yield request.postAsync({ @url, @json })
-    expect(res.statusCode).toBe(200)
+    expect(res.statusCode).toBe(201)
+    expect(res.body.status).toBe('accepted')
     course = yield Course.findById(@course.id)
     expect(course.get('i18n').de.description).toBe('German translation!')
+    expect(course.get('patches')).toBeUndefined()
     done()
 
   it 'saves the changes immediately if translations are for a new langauge', utils.wrap (done) ->
@@ -270,9 +272,11 @@ describe 'POST /db/course/:handle/patch', ->
     changedCourse.i18n.fr = { description: 'French translation!' }
     @json.delta = jsondiffpatch.diff(originalCourse, changedCourse)
     [res, body] = yield request.postAsync({ @url, @json })
-    expect(res.statusCode).toBe(200)
+    expect(res.statusCode).toBe(201)
+    expect(res.body.status).toBe('accepted')
     course = yield Course.findById(@course.id)
     expect(course.get('i18n').fr.description).toBe('French translation!')
+    expect(course.get('patches')).toBeUndefined()
     done()
     
   it 'saves a patch if it has some replacement translations', utils.wrap (done) ->
@@ -281,7 +285,8 @@ describe 'POST /db/course/:handle/patch', ->
     changedCourse.i18n.de.name = 'replacement'
     @json.delta = jsondiffpatch.diff(originalCourse, changedCourse)
     [res, body] = yield request.postAsync({ @url, @json })
-    expect(res.statusCode).toBe(200)
+    expect(res.statusCode).toBe(201)
+    expect(res.body.status).toBe('pending')
     course = yield Course.findById(@course.id)
     expect(course.get('i18n').de.name).toBe('existing translation')
     expect(course.get('patches').length).toBe(1)
@@ -298,7 +303,8 @@ describe 'POST /db/course/:handle/patch', ->
     changedCourse.notAProperty = 'this should not get saved to the course'
     @json.delta = jsondiffpatch.diff(originalCourse, changedCourse)
     [res, body] = yield request.postAsync({ @url, @json })
-    expect(res.statusCode).toBe(200)
+    expect(res.statusCode).toBe(201)
+    expect(res.body.status).toBe('pending')
     course = yield Course.findById(@course.id)
     expect(course.get('notAProperty')).toBeUndefined()
     expect(course.get('patches').length).toBe(1)
@@ -314,7 +320,8 @@ describe 'POST /db/course/:handle/patch', ->
     yield @course.update({$set: {'i18n.de.description': 'Race condition'}}) # another change got saved first
     @json.delta = jsondiffpatch.diff(originalCourse, changedCourse)
     [res, body] = yield request.postAsync({ @url, @json })
-    expect(res.statusCode).toBe(200)
+    expect(res.body.status).toBe('pending')
+    expect(res.statusCode).toBe(201)
     course = yield Course.findById(@course.id)
     expect(course.get('i18n').de.description).toBe('Race condition')
     expect(course.get('patches').length).toBe(1)

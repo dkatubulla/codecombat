@@ -106,7 +106,7 @@ module.exports =
     # TODO: Figure out a better system. Perhaps submit a series of paths? I18N Edit Views already use them for their rows.
     normalizedDelta = jsondiffpatch.diff(originalCourse, changedCourse)
     normalizedDelta = _.pick(normalizedDelta, _.keys(originalDelta))
-    reasonDidNotPatch = null
+    reasonDidNotPatch = undefined
 
     validation = tv4.validateMultiple(changedCourse, Course.jsonSchema)
     if not validation.valid
@@ -116,7 +116,6 @@ module.exports =
     else
       course.set(changedCourse)
       yield course.save()
-      return res.send(course.toObject())
       
     patch = new Patch(req.body)
     patch.set({
@@ -126,19 +125,20 @@ module.exports =
         original: course._id
       }
       creator: req.user._id
-      status: 'pending'
+      status: if reasonDidNotPatch then 'pending' else 'accepted'
       created: new Date().toISOString()
       reasonDidNotPatch
     })
     database.validateDoc(patch)
 
-    yield course.update({ $addToSet: { patches: patch._id }})
+    if reasonDidNotPatch
+      yield course.update({ $addToSet: { patches: patch._id }})
+      patches = course.get('patches') or []
+      patches.push patch._id
+      course.set({patches})
     yield patch.save()
 
-    patches = course.get('patches') or []
-    patches.push patch._id
-    course.set({patches})
-    res.send(course.toObject())
+    res.status(201).send(patch.toObject({req: req}))
 
     docLink = "https://codecombat.com/editor/course/#{course.id}"
     message = "#{req.user.get('name')} submitted a patch to #{course.get('name')}: #{patch.get('commitMessage')} #{docLink}"
