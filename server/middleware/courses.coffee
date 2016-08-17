@@ -123,6 +123,7 @@ module.exports =
       target: {
         collection: 'course'
         id: course._id
+        original: course._id
       }
       creator: req.user._id
       status: 'pending'
