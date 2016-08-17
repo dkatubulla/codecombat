@@ -5,6 +5,7 @@ log = require 'winston'
 config = require '../../server_config'
 
 PatchSchema = new mongoose.Schema({status: String}, {strict: false,read:config.mongo.readpref})
+PatchSchema.index({'target.original': 1, 'status': 1}, {name: 'target_status'})
 
 PatchSchema.pre 'save', (next) ->
   return next() unless @isNew # patch can't be altered after creation, so only need to check data once
